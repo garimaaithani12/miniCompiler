@@ -125,6 +125,7 @@ class MiniCCompilerApp:
         self.output_area.tag_config("warn", foreground="#FFD700")
 
 # === Launch ===
+# == 
 if __name__ == "__main__":
     app = ttk.Window(themename="darkly")  # try also: "flatly", "cyborg", "pulse", etc.
     MiniCCompilerApp(app)
