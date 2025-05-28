@@ -41,6 +41,7 @@ node->id = ast_id_counter++; // or use a separate counter if preferred
     return node;
 }
 
+void printAST(ASTNode* ,int );
 void printDOTNode(ASTNode* node, FILE* out);
 void printDOT(ASTNode* root);
 void yyerror(const char *s);
@@ -78,8 +79,8 @@ char* full3ACCode = NULL;
 
 
 %union {
-    int ival;
-    char* id;
+    int ival; // used with NUM
+    char* id; // used with ID
     struct {
         int val;
         char* code;
@@ -89,13 +90,14 @@ char* full3ACCode = NULL;
     ASTNode* ast;
 }
 
-%token <id> ID
-%token INT RETURN
+%token <id> ID //ID ret char*
+%token INT RETURN 
+%token MAIN
 %token PLUS ASSIGN SEMICOLON LPAREN RPAREN LBRACE RBRACE
-%token <ival> NUM
+%token <ival> NUM // NUM ret int 
 
 %type <ast> stmt statement_list function function_list
-%type <exprAttr> expr
+%type <exprAttr> expr //expr ret struct->$4 has .val,.code...
 
 %%
 
@@ -115,9 +117,9 @@ function_list:
 ;
 
 function:
-    INT ID LPAREN RPAREN LBRACE statement_list RBRACE
+    INT MAIN LPAREN RPAREN LBRACE statement_list RBRACE
     {
-        $$ = createNode("function", $6, NULL, $2);
+        $$ = createNode("main", $6, NULL, NULL);
     }
 ;
 
@@ -136,8 +138,25 @@ stmt:
     INT ID SEMICOLON
     {
         insert($2);
-        printf("Declared int variable: %s\n", $2);
+        printf(" Declared int variable: %s\n\n", $2);
         $$ = createNode("decl", NULL, NULL, $2);
+    }
+  | INT ID ASSIGN expr SEMICOLON
+    {
+        insert($2);
+        printf(" Declared int variable: %s with value %d\n\n", $2,$4.val);
+
+        int idx = lookup($2);
+        if (!hasSemanticError) {
+            table[idx].ival = $4.val;
+
+            char buffer[256];
+            sprintf(buffer, "%s%s = %s\n", $4.code, $2, $4.place);
+            strcat(full3ACCode, buffer);
+        }
+
+        ASTNode* idNode = createNode($2, NULL, NULL, NULL);
+        $$ = createNode("decl_assign", idNode, $4.ast, NULL);
     }
   | ID ASSIGN expr SEMICOLON
     {
@@ -147,11 +166,12 @@ stmt:
             hasSemanticError = 1;
         } else {
             table[idx].ival = $3.val;
-           if (!hasSemanticError) {
-            char buffer[256];
-            sprintf(buffer, "%s%s = %s\n", $3.code, $1, $3.place);
-            strcat(full3ACCode, buffer);
-        }
+
+            if (!hasSemanticError) {
+                char buffer[256];
+                sprintf(buffer, "%s%s = %s\n", $3.code, $1, $3.place);
+                strcat(full3ACCode, buffer);
+            }
         }
 
         $$ = createNode("assign", createNode($1, NULL, NULL, NULL), $3.ast, NULL);
@@ -159,11 +179,12 @@ stmt:
   | RETURN expr SEMICOLON
     {
         if (!hasSemanticError) {
-        printf("Return statement: %d\n\n", $2.val);
-    }
-    $$ = createNode("return", $2.ast, NULL, NULL); 
+            printf("\n Return statement: %d\n\n", $2.val);
+        }
+        $$ = createNode("return", $2.ast, NULL, NULL); 
     }
 ;
+
 
 
 expr:
@@ -222,6 +243,15 @@ void printDOTNode(ASTNode* node, FILE* out) {
     }
 }
 
+void printAST(ASTNode* root,int level) {
+    // Recursive tree print or dot file generation
+    // Example stub
+    if (!root) return;
+    printf("Level %d: %s\n", level, root->label);
+    printAST(root->left,level+1);
+    printAST(root->right,level+1);
+}
+
 void printDOT(ASTNode* root) {
     FILE* out = fopen("ast.dot", "w");
     if (!out) {
@@ -236,7 +266,8 @@ void printDOT(ASTNode* root) {
 }
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Error: %s\n", s);
+    extern char* yytext;
+    fprintf(stderr, "Error: %s at token '%s'\n", s, yytext);
 }
 
 void generateAssembly(const char* code) {
@@ -273,47 +304,60 @@ void generateAssembly(const char* code) {
 
 
 int main(int argc, char* argv[]) {
-    printf("Mini C Compiler Starting...\n");
+    printf("⏳ Compilation started...\n\n");
 
-if (argc > 1) {
+    if (argc > 1) {
         FILE* in = fopen(argv[1], "r");
         if (!in) {
             perror("Error opening input file");
             return 1;
         }
-        yyin = in;  
+        yyin = in;
     }
 
     full3ACCode = (char*) malloc(10000);
     full3ACCode[0] = '\0';
-    yyparse();
 
-    if (hasSemanticError) {
-        printf("\nCompilation failed due to semantic errors.\n");
-        return 1;   // stop here, do NOT generate AST or 3AC
+    printf("=== 🔍 Lexical Analysis Phase ===\n");
+    // Tokens already printed inside lexer.l (e.g., <INT>, <ID:x>, etc.)
+    // So nothing else needed here unless you want a separate token loop
+
+    yyparse();
+    printf("\n=== 🧠 Syntax & Semantic Analysis Phase ===\n");
+
+    if (root)
+    {
+       printAST(root,0); 
+      
     }
-    if (!hasSemanticError) {
-    printf("3AC:\n%s", full3ACCode);
+    if (root) {
+        printf("\n=== 🌳 Abstract Syntax Tree (AST) ===\n");
+        printDOT(root);
+        printf("AST image generated and opened.\n");
+    }
+    if (hasSemanticError) {
+        printf("\n❌ Compilation failed due to semantic errors.\n");
+        return 1;
+    }
+
+    printf("\n✅ No syntax/semantic errors found.\n");
+
+    printf("\n=== 🛠️ Intermediate Code Generation (3AC) ===\n");
+    printf("%s", full3ACCode);
+
+    printf("\n=== ⚙️ Assembly Code Generation Phase ===\n");
     generateAssembly(full3ACCode);
 
-    
-}
-
-    printf("=== Symbol Table ===\n");
+    printf("\n=== 🗃️ Symbol Table ===\n");
     for (int i = 0; i < symbol_count; i++) {
         printf("%s : int : %d\n", table[i].name, table[i].ival);
     }
 
-    if (root) {
-        printDOT(root);
 
-        
-        printf("AST image generated and opened.\n");
-    }
-
-    printf("Parsing complete.\n");
+    printf("\n✅ Compilation finished successfully.\n");
     return 0;
 }
+
 
 
 

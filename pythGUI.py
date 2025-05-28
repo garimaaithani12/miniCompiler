@@ -65,10 +65,14 @@ class MiniCCompilerApp:
         self.log_info("⏳ Compilation started...\n")
 
         try:
-            result = subprocess.run(["compiler.exe", "temp_input.c"], capture_output=True, text=True)
+            result = subprocess.run(["compiler.exe", "temp_input.c"], capture_output=True, text=True,  encoding="utf-8", errors="replace")
 
             if result.stdout:
-                self.log_success("✅ Compiler Output:\n" + result.stdout)
+                if "error:" in result.stdout.lower():
+                    self.log_error("❌ Semantic Error:\n" + result.stdout)
+                else:
+                    self.log_success("✅ Compiler Output:\n" + result.stdout)
+
 
             if result.stderr:
                 self.log_error("❌ Compiler Errors:\n" + result.stderr)
