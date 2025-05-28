@@ -9,8 +9,8 @@ import time
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-class MiniCCompilerApp:
-    def __init__(self, root):
+class MiniCCompilerApp:                    #main class of appl.
+    def __init__(self, root):              #init is constr. that initialises the GUI compo
         self.root = root
         self.root.title("🧠 Mini C Compiler GUI")
         self.root.geometry("900x680")
@@ -19,11 +19,11 @@ class MiniCCompilerApp:
         self.setup_tabs()
         self.setup_controls()
 
-    def setup_tabs(self):
+    def setup_tabs(self):             #sets up the tab in GUI 
         self.tabs = ttk.Notebook(self.root)
         self.tabs.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Code Input Tab
+        # Code Input Tab                        
         self.code_frame = ttk.Frame(self.tabs)
         self.code_input = ScrolledText(self.code_frame, font=("Consolas", 12), wrap=tk.WORD)
         self.code_input.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -41,7 +41,7 @@ class MiniCCompilerApp:
         self.ast_label.pack(expand=True, padx=20, pady=20)
         self.tabs.add(self.ast_frame, text="🌳 AST")
 
-    def setup_controls(self):
+    def setup_controls(self):     #set up of button in GUI like open , compile, exit
         btn_frame = ttk.Frame(self.root)
         btn_frame.pack(pady=5)
 
@@ -93,9 +93,9 @@ class MiniCCompilerApp:
     def wait_for_image(self, image_path):
         max_retries = 5
         for attempt in range(max_retries):
-            try:
-                if os.path.exists(image_path):
-                    img = Image.open(image_path)
+            try:                                                       #with this the prog catches zeroDivisionError hence no crashing                   
+                if os.path.exists(image_path):                         #cheking that image exists
+                    img = Image.open(image_path)                       #open image
                     img.load()  # fully load the image
                     img = img.resize((650, 400), Resampling.LANCZOS)
                     self.ast_img = ImageTk.PhotoImage(img)
@@ -112,7 +112,7 @@ class MiniCCompilerApp:
         self.log_error("❌ Failed to open ast.png after Graphviz generation.")
 
     # --- Logging with color themes ----
-    def log_info(self, message):
+    def log_info(self, message):    #logging functions displaying msg in output with diff colour
         self.output_area.insert(tk.END, message + "\n", "info")
         self.output_area.tag_config("info", foreground="#00BFFF")
 
