@@ -22,7 +22,7 @@
 
 
 [ \t\n\r]+ { /* skip whitespace */ }
-.          { /* ignore unknown char silently */ }
+.          { /* ignore unknown char silently. */ }
 
 %%
 
