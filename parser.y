@@ -37,7 +37,7 @@ ASTNode* createNode(const char* label, ASTNode* left, ASTNode* right, const char
     node->right = right;
     node->extra = extra;
     static int ast_id_counter = 0;
-node->id = ast_id_counter++; // or use a separate counter if preferred.
+node->id = ast_id_counter++; // or use a separate counter if preferred..
     return node;
 }
 
