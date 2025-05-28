@@ -111,7 +111,7 @@ class MiniCCompilerApp:
         self.ast_label.config(text="⚠️ Failed to load AST image.")
         self.log_error("❌ Failed to open ast.png after Graphviz generation.")
 
-    # --- Logging with color themes ---
+    # --- Logging with color themes ----
     def log_info(self, message):
         self.output_area.insert(tk.END, message + "\n", "info")
         self.output_area.tag_config("info", foreground="#00BFFF")
